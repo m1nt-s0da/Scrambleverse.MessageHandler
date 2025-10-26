@@ -57,7 +57,7 @@ public class WebsocketMessageProviderTests
     {
         // Arrange
         var mockWebSocket = new MockWebSocket();
-        var provider = new WebsocketMessageProvider(mockWebSocket);
+        IMessageProvider provider = new WebsocketMessageProvider(mockWebSocket);
         var message = "test message";
 
         // Act
@@ -73,7 +73,7 @@ public class WebsocketMessageProviderTests
     {
         // Arrange
         var mockWebSocket = new MockWebSocket();
-        var provider = new WebsocketMessageProvider(mockWebSocket);
+        IMessageProvider provider = new WebsocketMessageProvider(mockWebSocket);
         var cts = new CancellationTokenSource();
         var message = "test message";
 
@@ -89,7 +89,7 @@ public class WebsocketMessageProviderTests
     {
         // Arrange
         var mockWebSocket = new MockWebSocket();
-        var provider = new WebsocketMessageProvider(mockWebSocket);
+        IMessageProvider provider = new WebsocketMessageProvider(mockWebSocket);
         var receivedMessage = "";
 
         provider.OnMessageReceived += async (msg) =>
@@ -114,7 +114,7 @@ public class WebsocketMessageProviderTests
     {
         // Arrange
         var mockWebSocket = new MockWebSocket();
-        var provider = new WebsocketMessageProvider(mockWebSocket);
+        IMessageProvider provider = new WebsocketMessageProvider(mockWebSocket);
         var receivedMessage = "";
 
         provider.OnMessageReceived += async (msg) =>
@@ -139,7 +139,7 @@ public class WebsocketMessageProviderTests
     {
         // Arrange
         var mockWebSocket = new MockWebSocket();
-        var provider = new WebsocketMessageProvider(mockWebSocket);
+        IMessageProvider provider = new WebsocketMessageProvider(mockWebSocket);
         var receivedMessages = new List<string>();
 
         provider.OnMessageReceived += async (msg) =>

@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace Scrambleverse.MessageHandler;
 
-public static class TaskCast
+internal static class TaskCast
 {
     public static Task<U> Cast<T, U>(this Task<T> task)
     {
