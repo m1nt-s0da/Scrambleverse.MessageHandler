@@ -51,7 +51,7 @@ public class InvocationHandlerInfo
         }, eventInfo);
     }
 
-    public async Task<object?> Invoke(object? body)
+    public virtual async Task<object?> Invoke(object? body)
     {
         object?[] args = BodyType != null ? [body] : [];
         var result = RaiseDelegate.DynamicInvoke([args]);

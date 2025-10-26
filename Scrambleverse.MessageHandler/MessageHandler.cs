@@ -97,7 +97,7 @@ public class MessageHandler
     /// <returns>
     /// A task representing the asynchronous message processing operation.
     /// </returns>
-    private async Task HandleMessage(string message)
+    protected virtual async Task HandleMessage(string message)
     {
         // Handle incoming messages here
         var node = JsonNode.Parse(message);
@@ -153,7 +153,7 @@ public class MessageHandler
     /// var processed = await handler.Invoke&lt;string, string&gt;("ProcessData", "input data");
     /// </code>
     /// </example>
-    public async Task<T> Invoke<T, U>(string target, U message)
+    public virtual async Task<T> Invoke<T, U>(string target, U message)
     {
         var body = new InvokeMessageBody<U>
         {
@@ -182,7 +182,7 @@ public class MessageHandler
     /// executes the handler, and sends either a result or error response back through
     /// the message provider.
     /// </remarks>
-    private async Task ProcessInvocation(JsonNode node)
+    protected virtual async Task ProcessInvocation(JsonNode node)
     {
         var name = node["name"]?.ToString();
         var id = node["id"]?.ToString() ?? throw new Exception("Invoke message missing id.");
@@ -237,7 +237,7 @@ public class MessageHandler
     /// Thrown when the result message is missing an ID or when no pending invocation
     /// is found for the given ID.
     /// </exception>
-    private void ProcessResult(JsonNode node)
+    protected virtual void ProcessResult(JsonNode node)
     {
         var id = node["id"]?.ToString() ?? throw new Exception("Result message missing id.");
         if (pendingInvokes.TryGetValue(id, out var pendingInvoke))

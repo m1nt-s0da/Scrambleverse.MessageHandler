@@ -119,7 +119,7 @@ public class WebsocketMessageProvider(WebSocket webSocket, bool autoClose = fals
     /// the underlying WebSocket. Otherwise, the WebSocket remains open and must be
     /// managed separately.
     /// </remarks>
-    public void Dispose()
+    public virtual void Dispose()
     {
         if (_autoClose)
         {
@@ -198,7 +198,7 @@ public class WebsocketMessageProvider(WebSocket webSocket, bool autoClose = fals
     /// remains open. It will exit when the connection is closed, an error occurs, or the
     /// operation is cancelled.
     /// </remarks>
-    public async Task Run(ArraySegment<byte>? buffer = null, CancellationToken? cancellationToken = null)
+    public virtual async Task Run(ArraySegment<byte>? buffer = null, CancellationToken? cancellationToken = null)
     {
         var _buffer = buffer ?? new ArraySegment<byte>(new byte[1024 * 4]);
         while (_webSocket.State == WebSocketState.Open)
