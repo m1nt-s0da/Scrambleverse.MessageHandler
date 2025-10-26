@@ -1,0 +1,63 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# NUnit
+*.VisualState```
+# Compilation outputs
+*/bin/
+*/obj/
+*/Debug/
+*/Release/
+*/x64/
+*/x86/
+*/ARM/
+*/ARM64/
+
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build logs
+*.log
+BuildLog.htm
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS generated files
+Thumbs.db
+.DS_Store
