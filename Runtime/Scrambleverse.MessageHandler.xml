@@ -88,50 +88,62 @@
         </member>
         <member name="T:Scrambleverse.MessageHandler.InvocationHandlerAttribute">
              <summary>
-             Marks an event as an invocation handler that can be called remotely through the message handler system.
-             This attribute specifies the name that remote callers use to invoke the associated event handler.
+             Marks a method as an invocation handler that can be called remotely through the message handler system.
+             This attribute specifies the name that remote callers use to invoke the associated method.
              </summary>
              <remarks>
              <para>
-             Events decorated with this attribute will be automatically registered in the <see cref="T:Scrambleverse.MessageHandler.MessageHandler"/>
+             Methods decorated with this attribute will be automatically registered in the <see cref="T:Scrambleverse.MessageHandler.MessageHandler"/>
              and can be invoked by remote clients by sending invoke messages with the specified name.
              </para>
              <para>
-             The event handler can accept zero or one parameter and can return void, a value, or a Task for asynchronous operations.
-             Multiple event handlers for the same event are not supported and will result in an exception.
+             The method can accept zero or one parameter and can return void, a value, or a Task for asynchronous operations.
+             Methods must be accessible to the MessageHandler instance (public, protected, or private).
              </para>
              <example>
              <code>
              [InvocationHandler("ProcessData")]
-             public event Action&lt;string&gt;? OnProcessData;
+             public void ProcessData(string data)
+             {
+                 // Process the data
+             }
             
              [InvocationHandler("GetUserAsync")]
-             public event Func&lt;string, Task&lt;User&gt;&gt;? OnGetUser;
+             public async Task&lt;User&gt; GetUserAsync(string userId)
+             {
+                 return await userService.GetUserAsync(userId);
+             }
              </code>
              </example>
              </remarks>
         </member>
         <member name="M:Scrambleverse.MessageHandler.InvocationHandlerAttribute.#ctor(System.String)">
              <summary>
-             Marks an event as an invocation handler that can be called remotely through the message handler system.
-             This attribute specifies the name that remote callers use to invoke the associated event handler.
+             Marks a method as an invocation handler that can be called remotely through the message handler system.
+             This attribute specifies the name that remote callers use to invoke the associated method.
              </summary>
              <remarks>
              <para>
-             Events decorated with this attribute will be automatically registered in the <see cref="T:Scrambleverse.MessageHandler.MessageHandler"/>
+             Methods decorated with this attribute will be automatically registered in the <see cref="T:Scrambleverse.MessageHandler.MessageHandler"/>
              and can be invoked by remote clients by sending invoke messages with the specified name.
              </para>
              <para>
-             The event handler can accept zero or one parameter and can return void, a value, or a Task for asynchronous operations.
-             Multiple event handlers for the same event are not supported and will result in an exception.
+             The method can accept zero or one parameter and can return void, a value, or a Task for asynchronous operations.
+             Methods must be accessible to the MessageHandler instance (public, protected, or private).
              </para>
              <example>
              <code>
              [InvocationHandler("ProcessData")]
-             public event Action&lt;string&gt;? OnProcessData;
+             public void ProcessData(string data)
+             {
+                 // Process the data
+             }
             
              [InvocationHandler("GetUserAsync")]
-             public event Func&lt;string, Task&lt;User&gt;&gt;? OnGetUser;
+             public async Task&lt;User&gt; GetUserAsync(string userId)
+             {
+                 return await userService.GetUserAsync(userId);
+             }
              </code>
              </example>
              </remarks>
@@ -146,6 +158,97 @@
             and follow a consistent naming convention for the application.
             </value>
         </member>
+        <member name="T:Scrambleverse.MessageHandler.InvocationHandlerInfo">
+            <summary>
+            Encapsulates information about a method that can be invoked remotely through the message handler system.
+            This class provides metadata about the method signature and handles the actual method invocation.
+            </summary>
+            <remarks>
+            <para>
+            This class is used internally by <see cref="T:Scrambleverse.MessageHandler.MessageHandler"/> to store information about methods
+            decorated with <see cref="T:Scrambleverse.MessageHandler.InvocationHandlerAttribute"/>. It provides a unified interface for
+            invoking methods with different signatures and handling both synchronous and asynchronous results.
+            </para>
+            <para>
+            Supported method signatures:
+            <list type="bullet">
+            <item><description>Methods with no parameters: <c>void Method()</c> or <c>T Method()</c></description></item>
+            <item><description>Methods with one parameter: <c>void Method(T param)</c> or <c>U Method(T param)</c></description></item>
+            <item><description>Async methods: <c>Task Method()</c>, <c>Task&lt;T&gt; Method()</c>, etc.</description></item>
+            </list>
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Scrambleverse.MessageHandler.InvocationHandlerInfo.MethodInfo">
+            <summary>
+            Gets the <see cref="P:Scrambleverse.MessageHandler.InvocationHandlerInfo.MethodInfo"/> representing the method that can be invoked.
+            </summary>
+            <value>
+            The method information containing details about the method signature, parameters, and return type.
+            </value>
+        </member>
+        <member name="P:Scrambleverse.MessageHandler.InvocationHandlerInfo.BodyType">
+            <summary>
+            Gets the type of the parameter that the method expects, or null if the method takes no parameters.
+            </summary>
+            <value>
+            The parameter type for single-parameter methods, or null for parameterless methods.
+            This is used for deserializing incoming message bodies to the correct type.
+            </value>
+        </member>
+        <member name="P:Scrambleverse.MessageHandler.InvocationHandlerInfo.Object">
+            <summary>
+            Gets the object instance on which the method will be invoked.
+            </summary>
+            <value>
+            The target object for method invocation. This is typically the MessageHandler instance
+            that contains the decorated method.
+            </value>
+        </member>
+        <member name="M:Scrambleverse.MessageHandler.InvocationHandlerInfo.#ctor(System.Object,System.Reflection.MethodInfo)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Scrambleverse.MessageHandler.InvocationHandlerInfo"/> class with the specified object and method.
+            </summary>
+            <param name="obj">
+            The object instance on which the method will be invoked.
+            </param>
+            <param name="methodInfo">
+            The <see cref="P:Scrambleverse.MessageHandler.InvocationHandlerInfo.MethodInfo"/> representing the method to be invoked.
+            </param>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when the method has more than one parameter, which is not supported.
+            </exception>
+            <remarks>
+            During construction, this class analyzes the method signature to determine the body type
+            for parameter deserialization. Methods with zero parameters will have a null body type,
+            while methods with one parameter will have the parameter type as the body type.
+            </remarks>
+        </member>
+        <member name="M:Scrambleverse.MessageHandler.InvocationHandlerInfo.Invoke(System.Object)">
+            <summary>
+            Invokes the method with the specified body parameter and returns the result.
+            </summary>
+            <param name="body">
+            The parameter value to pass to the method, or null for parameterless methods.
+            This should match the type specified by <see cref="P:Scrambleverse.MessageHandler.InvocationHandlerInfo.BodyType"/>.
+            </param>
+            <returns>
+            A task that represents the asynchronous method invocation. The task result contains
+            the return value of the method, or null for void methods. For async methods,
+            this automatically awaits the result.
+            </returns>
+            <remarks>
+            This method handles both synchronous and asynchronous method invocations automatically.
+            For methods that return Task or Task&lt;T&gt;, the result will be awaited before returning.
+            For void methods, the result will be null.
+            </remarks>
+            <exception cref="T:System.Reflection.TargetException">
+            Thrown when the method invocation fails due to invalid target or parameters.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when the body parameter doesn't match the expected type.
+            </exception>
+        </member>
         <member name="T:Scrambleverse.MessageHandler.MessageHandler">
              <summary>
              Provides a message-based communication system that enables remote procedure calls (RPC) through various transport protocols.
@@ -153,7 +256,7 @@
              </summary>
              <remarks>
              <para>
-             The MessageHandler automatically discovers and registers events marked with <see cref="T:Scrambleverse.MessageHandler.InvocationHandlerAttribute"/>
+             The MessageHandler automatically discovers and registers methods marked with <see cref="T:Scrambleverse.MessageHandler.InvocationHandlerAttribute"/>
              as remotely callable handlers. These handlers can be invoked by remote clients by sending appropriately formatted
              invoke messages through the underlying <see cref="T:Scrambleverse.MessageHandler.IMessageProvider"/>.
              </para>
@@ -172,21 +275,21 @@
              </remarks>
              <example>
              <code>
-             // Define a message handler with remote callable events
+             // Define a message handler with remote callable methods
              public class MyMessageHandler : MessageHandler
              {
                  public MyMessageHandler(IMessageProvider provider) : base(provider) { }
             
-                 [InvocationHandler("Calculate")]
-                 public event Func&lt;int, int, int&gt;? OnCalculate;
-            
                  [InvocationHandler("ProcessAsync")]
-                 public event Func&lt;string, Task&lt;string&gt;&gt;? OnProcessAsync;
+                 public async Task&lt;string&gt; ProcessDataAsync(string input)
+                 {
+                     await Task.Delay(100);
+                     return $"Processed: {input}";
+                 }
              }
             
              // Usage
              var handler = new MyMessageHandler(messageProvider);
-             handler.OnCalculate += (a, b) => a + b;
             
              // Call remote handler
              var result = await handler.Invoke&lt;int, (int, int)&gt;("RemoteCalculate", (5, 3));
@@ -202,7 +305,7 @@
             This provider will be used for both sending outgoing messages and receiving incoming messages.
             </param>
             <remarks>
-            During construction, the handler automatically scans the current type for events decorated with
+            During construction, the handler automatically scans the current type for methods decorated with
             <see cref="T:Scrambleverse.MessageHandler.InvocationHandlerAttribute"/> and registers them as remotely callable handlers.
             The message provider's <see cref="E:Scrambleverse.MessageHandler.IMessageProvider.OnMessageReceived"/> event is subscribed to
             for processing incoming messages.
