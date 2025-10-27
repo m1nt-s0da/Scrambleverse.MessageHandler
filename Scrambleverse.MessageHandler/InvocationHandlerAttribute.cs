@@ -3,29 +3,35 @@ using System;
 namespace Scrambleverse.MessageHandler;
 
 /// <summary>
-/// Marks an event as an invocation handler that can be called remotely through the message handler system.
-/// This attribute specifies the name that remote callers use to invoke the associated event handler.
+/// Marks a method as an invocation handler that can be called remotely through the message handler system.
+/// This attribute specifies the name that remote callers use to invoke the associated method.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Events decorated with this attribute will be automatically registered in the <see cref="MessageHandler"/>
+/// Methods decorated with this attribute will be automatically registered in the <see cref="MessageHandler"/>
 /// and can be invoked by remote clients by sending invoke messages with the specified name.
 /// </para>
 /// <para>
-/// The event handler can accept zero or one parameter and can return void, a value, or a Task for asynchronous operations.
-/// Multiple event handlers for the same event are not supported and will result in an exception.
+/// The method can accept zero or one parameter and can return void, a value, or a Task for asynchronous operations.
+/// Methods must be accessible to the MessageHandler instance (public, protected, or private).
 /// </para>
 /// <example>
 /// <code>
 /// [InvocationHandler("ProcessData")]
-/// public event Action&lt;string&gt;? OnProcessData;
+/// public void ProcessData(string data)
+/// {
+///     // Process the data
+/// }
 ///
 /// [InvocationHandler("GetUserAsync")]
-/// public event Func&lt;string, Task&lt;User&gt;&gt;? OnGetUser;
+/// public async Task&lt;User&gt; GetUserAsync(string userId)
+/// {
+///     return await userService.GetUserAsync(userId);
+/// }
 /// </code>
 /// </example>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Event, Inherited = false, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = false)]
 public class InvocationHandlerAttribute(string name) : Attribute
 {
     /// <summary>

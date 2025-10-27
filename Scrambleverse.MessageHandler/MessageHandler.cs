@@ -15,7 +15,7 @@ namespace Scrambleverse.MessageHandler;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The MessageHandler automatically discovers and registers events marked with <see cref="InvocationHandlerAttribute"/>
+/// The MessageHandler automatically discovers and registers methods marked with <see cref="InvocationHandlerAttribute"/>
 /// as remotely callable handlers. These handlers can be invoked by remote clients by sending appropriately formatted
 /// invoke messages through the underlying <see cref="IMessageProvider"/>.
 /// </para>
@@ -34,21 +34,21 @@ namespace Scrambleverse.MessageHandler;
 /// </remarks>
 /// <example>
 /// <code>
-/// // Define a message handler with remote callable events
+/// // Define a message handler with remote callable methods
 /// public class MyMessageHandler : MessageHandler
 /// {
 ///     public MyMessageHandler(IMessageProvider provider) : base(provider) { }
 ///
-///     [InvocationHandler("Calculate")]
-///     public event Func&lt;int, int, int&gt;? OnCalculate;
-///
 ///     [InvocationHandler("ProcessAsync")]
-///     public event Func&lt;string, Task&lt;string&gt;&gt;? OnProcessAsync;
+///     public async Task&lt;string&gt; ProcessDataAsync(string input)
+///     {
+///         await Task.Delay(100);
+///         return $"Processed: {input}";
+///     }
 /// }
 ///
 /// // Usage
 /// var handler = new MyMessageHandler(messageProvider);
-/// handler.OnCalculate += (a, b) => a + b;
 ///
 /// // Call remote handler
 /// var result = await handler.Invoke&lt;int, (int, int)&gt;("RemoteCalculate", (5, 3));
@@ -67,7 +67,7 @@ public class MessageHandler
     /// This provider will be used for both sending outgoing messages and receiving incoming messages.
     /// </param>
     /// <remarks>
-    /// During construction, the handler automatically scans the current type for events decorated with
+    /// During construction, the handler automatically scans the current type for methods decorated with
     /// <see cref="InvocationHandlerAttribute"/> and registers them as remotely callable handlers.
     /// The message provider's <see cref="IMessageProvider.OnMessageReceived"/> event is subscribed to
     /// for processing incoming messages.
@@ -80,10 +80,10 @@ public class MessageHandler
         this.messageProvider = messageProvider;
         messageProvider.OnMessageReceived += HandleMessage;
 
-        events = new ReadOnlyDictionary<string, InvocationHandlerInfo>(GetType().GetEvents(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            .Select(evt => (evt, evt.GetCustomAttribute<InvocationHandlerAttribute>()))
+        events = new ReadOnlyDictionary<string, InvocationHandlerInfo>(GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .Select(method => (method, method.GetCustomAttribute<InvocationHandlerAttribute>()))
             .Where(t => t.Item2 != null)
-            .ToDictionary(t => t.Item2.Name, t => InvocationHandlerInfo.FromMessageHandler(this, t.evt)));
+            .ToDictionary(t => t.Item2.Name, t => new InvocationHandlerInfo(this, t.method)));
     }
 
     /// <summary>

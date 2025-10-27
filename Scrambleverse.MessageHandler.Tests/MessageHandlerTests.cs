@@ -108,28 +108,25 @@ public class MessageHandlerTests
     }
 
     [Fact]
-    public async Task HandleMessage_WithInvokeMessage_CallsEventHandler()
+    public async Task HandleMessage_WithInvokeMessage_CallsMethodHandler()
     {
         // Arrange
         var mockProvider = new MockMessageProvider();
         var handler = new TestMessageHandler(mockProvider);
-
-        string? receivedMessage = null;
-        handler.TestEvent += (msg) => receivedMessage = msg;
 
         // Act
         var invokeMessage = JsonSerializer.Serialize(new
         {
             type = "invoke",
             id = "test-id",
-            name = "TestEvent",
+            name = "TestMethod",
             body = "hello world"
         });
 
         await mockProvider.SimulateMessageReceived(invokeMessage);
 
         // Assert
-        Assert.Equal("hello world", receivedMessage);
+        Assert.Equal("hello world", handler.ReceivedMessage);
 
         // Check result message was sent
         Assert.Single(mockProvider.SentMessages); // result
@@ -148,14 +145,12 @@ public class MessageHandlerTests
         var mockProvider = new MockMessageProvider();
         var handler = new TestMessageHandler(mockProvider);
 
-        handler.TestEventWithReturn += (msg) => $"Received: {msg}";
-
         // Act
         var invokeMessage = JsonSerializer.Serialize(new
         {
             type = "invoke",
             id = "test-id",
-            name = "TestEventWithReturn",
+            name = "TestMethodWithReturn",
             body = "hello"
         });
 
@@ -178,14 +173,12 @@ public class MessageHandlerTests
         var mockProvider = new MockMessageProvider();
         var handler = new TestMessageHandler(mockProvider);
 
-        handler.TestEvent += (msg) => throw new InvalidOperationException("Test exception");
-
         // Act
         var invokeMessage = JsonSerializer.Serialize(new
         {
             type = "invoke",
             id = "test-id",
-            name = "TestEvent",
+            name = "ThrowingMethod",
             body = "hello"
         });
 
@@ -213,35 +206,29 @@ public class MessageHandlerTests
         {
             type = "invoke",
             id = "test-id",
-            name = "UnknownEvent",
+            name = "UnknownMethod",
             body = "hello"
         });
 
         await mockProvider.SimulateMessageReceived(invokeMessage);
 
         // Assert
-        Assert.Empty(mockProvider.SentMessages); // Only the original message, no response
+        Assert.Empty(mockProvider.SentMessages); // No response
     }
 
     [Fact]
-    public async Task HandleMessage_WithAsyncEventHandler_AwaitsCompletion()
+    public async Task HandleMessage_WithAsyncMethodHandler_AwaitsCompletion()
     {
         // Arrange
         var mockProvider = new MockMessageProvider();
         var handler = new TestMessageHandler(mockProvider);
-
-        handler.TestAsyncEvent += async (msg) =>
-        {
-            await Task.Delay(10);
-            return $"Async: {msg}";
-        };
 
         // Act
         var invokeMessage = JsonSerializer.Serialize(new
         {
             type = "invoke",
             id = "test-id",
-            name = "TestAsyncEvent",
+            name = "TestAsyncMethod",
             body = "hello"
         });
 
@@ -258,16 +245,34 @@ public class MessageHandlerTests
 
     private class TestMessageHandler : MessageHandler
     {
+        public string? ReceivedMessage { get; private set; }
+
         public TestMessageHandler(IMessageProvider provider) : base(provider) { }
 
-        [InvocationHandler("TestEvent")]
-        public event Action<string>? TestEvent;
+        [InvocationHandler("TestMethod")]
+        public void HandleTestMethod(string message)
+        {
+            ReceivedMessage = message;
+        }
 
-        [InvocationHandler("TestEventWithReturn")]
-        public event Func<string, string>? TestEventWithReturn;
+        [InvocationHandler("TestMethodWithReturn")]
+        public string HandleTestMethodWithReturn(string message)
+        {
+            return $"Received: {message}";
+        }
 
-        [InvocationHandler("TestAsyncEvent")]
-        public event Func<string, Task<string>>? TestAsyncEvent;
+        [InvocationHandler("TestAsyncMethod")]
+        public async Task<string> HandleTestAsyncMethod(string message)
+        {
+            await Task.Delay(10);
+            return $"Async: {message}";
+        }
+
+        [InvocationHandler("ThrowingMethod")]
+        public void ThrowingMethod(string message)
+        {
+            throw new InvalidOperationException("Test exception");
+        }
     }
 
     private class MockMessageProvider : IMessageProvider
