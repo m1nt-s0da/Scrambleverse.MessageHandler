@@ -25,6 +25,123 @@ public class MessageHandlerTests
     }
 
     [Fact]
+    public void Constructor_WithSeparateHandlerObject_RegistersHandlerMethods()
+    {
+        // Arrange
+        var mockProvider = new MockMessageProvider();
+        var handlerObject = new SeparateHandlerObject();
+
+        // Act
+        var messageHandler = new MessageHandler(mockProvider, handlerObject);
+
+        // Assert
+        Assert.True(mockProvider.HasSubscribers);
+    }
+
+    [Fact]
+    public async Task HandleMessage_WithSeparateHandlerObject_CallsMethodOnHandlerObject()
+    {
+        // Arrange
+        var mockProvider = new MockMessageProvider();
+        var handlerObject = new SeparateHandlerObject();
+        var messageHandler = new MessageHandler(mockProvider, handlerObject);
+
+        // Act
+        var invokeMessage = JsonSerializer.Serialize(new
+        {
+            type = "invoke",
+            id = "test-id",
+            name = "ProcessData",
+            body = "test data"
+        });
+
+        await mockProvider.SimulateMessageReceived(invokeMessage);
+
+        // Assert
+        Assert.Equal("test data", handlerObject.ReceivedData);
+
+        // Check result message was sent
+        Assert.Single(mockProvider.SentMessages);
+        var resultMessage = mockProvider.SentMessages[0];
+        var resultJson = JsonNode.Parse(resultMessage);
+
+        Assert.Equal("result", resultJson?["type"]?.ToString());
+        Assert.Equal("test-id", resultJson?["id"]?.ToString());
+        Assert.Equal("Processed: test data", resultJson?["body"]?.ToString());
+    }
+
+    [Fact]
+    public async Task HandleMessage_WithSeparateHandlerObjectAndReturnValue_SendsResult()
+    {
+        // Arrange
+        var mockProvider = new MockMessageProvider();
+        var handlerObject = new SeparateHandlerObject();
+        var messageHandler = new MessageHandler(mockProvider, handlerObject);
+
+        // Act
+        var invokeMessage = JsonSerializer.Serialize(new
+        {
+            type = "invoke",
+            id = "calc-id",
+            name = "CalculateSum",
+            body = new { A = 5, B = 3 }
+        });
+
+        await mockProvider.SimulateMessageReceived(invokeMessage);
+
+        // Assert
+        Assert.Single(mockProvider.SentMessages);
+        var resultMessage = mockProvider.SentMessages[0];
+        var resultJson = JsonNode.Parse(resultMessage);
+
+        Assert.Equal("result", resultJson?["type"]?.ToString());
+        Assert.Equal("calc-id", resultJson?["id"]?.ToString());
+        Assert.Equal(8, resultJson?["body"]?.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task HandleMessage_WithSeparateHandlerObjectAsync_AwaitsCompletion()
+    {
+        // Arrange
+        var mockProvider = new MockMessageProvider();
+        var handlerObject = new SeparateHandlerObject();
+        var messageHandler = new MessageHandler(mockProvider, handlerObject);
+
+        // Act
+        var invokeMessage = JsonSerializer.Serialize(new
+        {
+            type = "invoke",
+            id = "async-id",
+            name = "AsyncOperation",
+            body = "test input"
+        });
+
+        await mockProvider.SimulateMessageReceived(invokeMessage);
+
+        // Assert
+        Assert.Single(mockProvider.SentMessages);
+        var resultMessage = mockProvider.SentMessages[0];
+        var resultJson = JsonNode.Parse(resultMessage);
+
+        Assert.Equal("result", resultJson?["type"]?.ToString());
+        Assert.Equal("async-id", resultJson?["id"]?.ToString());
+        Assert.Equal("Async result: test input", resultJson?["body"]?.ToString());
+    }
+
+    [Fact]
+    public void Constructor_WithNullHandler_UsesCurrentInstanceAsSelf()
+    {
+        // Arrange
+        var mockProvider = new MockMessageProvider();
+
+        // Act
+        var handler = new TestMessageHandler(mockProvider);
+
+        // Assert - Should work the same as before (no separate handler object)
+        Assert.True(mockProvider.HasSubscribers);
+    }
+
+    [Fact]
     public async Task Invoke_WithValidTargetAndMessage_SendsInvokeMessage()
     {
         // Arrange
@@ -316,5 +433,36 @@ public class MessageHandlerTests
         {
             // No cleanup needed for mock
         }
+    }
+
+    private class SeparateHandlerObject
+    {
+        public string? ReceivedData { get; private set; }
+
+        [InvocationHandler("ProcessData")]
+        public string ProcessData(string data)
+        {
+            ReceivedData = data;
+            return $"Processed: {data}";
+        }
+
+        [InvocationHandler("CalculateSum")]
+        public int CalculateSum(CalculationRequest request)
+        {
+            return request.A + request.B;
+        }
+
+        [InvocationHandler("AsyncOperation")]
+        public async Task<string> AsyncOperation(string input)
+        {
+            await Task.Delay(1);
+            return $"Async result: {input}";
+        }
+    }
+
+    private class CalculationRequest
+    {
+        public int A { get; set; }
+        public int B { get; set; }
     }
 }

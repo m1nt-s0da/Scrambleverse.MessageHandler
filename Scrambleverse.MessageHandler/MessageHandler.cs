@@ -47,8 +47,18 @@ namespace Scrambleverse.MessageHandler;
 ///     }
 /// }
 ///
+/// // Alternative: Use separate handler object
+/// public class DataProcessor
+/// {
+///     [InvocationHandler("ProcessData")]
+///     public string ProcessData(string input) => $"Processed: {input}";
+/// }
+///
 /// // Usage
 /// var handler = new MyMessageHandler(messageProvider);
+/// // or with separate handler object:
+/// var processor = new DataProcessor();
+/// var handlerWithSeparateObject = new MessageHandler(messageProvider, processor);
 ///
 /// // Call remote handler
 /// var result = await handler.Invoke&lt;int, (int, int)&gt;("RemoteCalculate", (5, 3));
@@ -60,30 +70,41 @@ public class MessageHandler
     private readonly ReadOnlyDictionary<string, InvocationHandlerInfo> events;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="MessageHandler"/> class with the specified message provider.
+    /// Initializes a new instance of the <see cref="MessageHandler"/> class with the specified message provider and optional handler object.
     /// </summary>
     /// <param name="messageProvider">
     /// The message provider that handles the underlying communication transport.
     /// This provider will be used for both sending outgoing messages and receiving incoming messages.
     /// </param>
+    /// <param name="handler">
+    /// An optional handler object that contains methods decorated with <see cref="InvocationHandlerAttribute"/>.
+    /// If null, the current instance will be used as the handler object.
+    /// </param>
     /// <remarks>
-    /// During construction, the handler automatically scans the current type for methods decorated with
+    /// <para>
+    /// During construction, the handler automatically scans the target object's type for methods decorated with
     /// <see cref="InvocationHandlerAttribute"/> and registers them as remotely callable handlers.
+    /// The method invocations will be performed on the specified <paramref name="handler"/> object,
+    /// or on the current instance if no handler is provided.
+    /// </para>
+    /// <para>
     /// The message provider's <see cref="IMessageProvider.OnMessageReceived"/> event is subscribed to
     /// for processing incoming messages.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="messageProvider"/> is null.
     /// </exception>
-    public MessageHandler(IMessageProvider messageProvider)
+    public MessageHandler(IMessageProvider messageProvider, object? handler = null)
     {
         this.messageProvider = messageProvider;
         messageProvider.OnMessageReceived += HandleMessage;
 
-        events = new ReadOnlyDictionary<string, InvocationHandlerInfo>(GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        var targetObject = handler ?? this;
+        events = new ReadOnlyDictionary<string, InvocationHandlerInfo>(targetObject.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             .Select(method => (method, method.GetCustomAttribute<InvocationHandlerAttribute>()))
             .Where(t => t.Item2 != null)
-            .ToDictionary(t => t.Item2.Name, t => new InvocationHandlerInfo(this, t.method)));
+            .ToDictionary(t => t.Item2.Name, t => new InvocationHandlerInfo(targetObject, t.method)));
     }
 
     /// <summary>
